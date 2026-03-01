@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Mocking BaseProvider for standalone execution
+# Mocking BaseProvider for standalone execution or integration
 class BaseProvider:
     def __init__(self, name):
         self.name = name
@@ -24,15 +24,19 @@ class PlutoProvider(BaseProvider):
     def __init__(self):
         super().__init__("pluto")
         
-        self.device_id = str(uuid.uuid1()) [cite: 1]
-        self.session_token = None [cite: 1]
-        self.stitcher_params = "" [cite: 1]
-        self.session_expires_at = 0 [cite: 1]
+        self.device_id = str(uuid.uuid1())
+        self.session_token = None
+        self.stitcher_params = ""
+        self.session_expires_at = 0
         
-        self.username = os.getenv('PLUTO_USERNAME') [cite: 1]
-        self.password = os.getenv('PLUTO_PASSWORD') [cite: 1]
-        self.region = os.getenv('PLUTO_REGION', 'us_west') [cite: 2]
+        # Load credentials from environment
+        self.username = os.getenv('PLUTO_USERNAME')
+        self.password = os.getenv('PLUTO_PASSWORD')
         
+        # Get region from environment
+        self.region = os.getenv('PLUTO_REGION', 'us_west')
+        
+        # Regional IP addresses for geo-spoofing
         self.x_forward = {
             "local": "",
             "uk": "178.238.11.6",
@@ -40,7 +44,7 @@ class PlutoProvider(BaseProvider):
             "fr": "193.169.64.141",
             "us_east": "108.82.206.181",
             "us_west": "76.81.9.69",
-        } [cite: 2]
+        }
         
         self.headers = {
             'authority': 'boot.pluto.tv',
@@ -49,19 +53,20 @@ class PlutoProvider(BaseProvider):
             'origin': 'https://pluto.tv',
             'referer': 'https://pluto.tv/',
             'user-agent': self.get_user_agent(),
-        } [cite: 3]
+        }
         
         if self.region in self.x_forward:
             forwarded_ip = self.x_forward[self.region]
             if forwarded_ip:
-                self.headers["X-Forwarded-For"] = forwarded_ip [cite: 3]
+                self.headers["X-Forwarded-For"] = forwarded_ip
 
     def _get_session_token(self) -> str:
+        """Get or refresh session token"""
         if self.session_token and datetime.now().timestamp() < self.session_expires_at:
-            return self.session_token [cite: 4]
+            return self.session_token
         
         try:
-            url = 'https://boot.pluto.tv/v4/start' [cite: 4]
+            url = 'https://boot.pluto.tv/v4/start'
             params = {
                 'appName': 'web',
                 'appVersion': '8.0.0-111b2b9dc00bd0bea9030b30662159ed9e7c8bc6',
@@ -77,89 +82,98 @@ class PlutoProvider(BaseProvider):
                 'notificationVersion': '1',
                 'appLaunchCount': '',
                 'lastAppLaunchDate': '',
-            } [cite: 4, 5, 6]
+            }
             
             if self.username and self.password:
-                params['username'] = self.username [cite: 6]
-                params['password'] = self.password [cite: 7]
+                params['username'] = self.username
+                params['password'] = self.password
             
-            response = requests.get(url, headers=self.headers, params=params, timeout=self.get_timeout()) [cite: 7]
+            response = requests.get(url, headers=self.headers, params=params, timeout=self.get_timeout())
             response.raise_for_status()
             
             data = response.json()
-            self.session_token = data.get('sessionToken') [cite: 7]
-            self.stitcher_params = data.get('stitcherParams', '') [cite: 7]
-            self.session_expires_at = datetime.now().timestamp() + (4 * 3600) [cite: 8]
+            self.session_token = data.get('sessionToken')
+            self.stitcher_params = data.get('stitcherParams', '')
+            self.session_expires_at = datetime.now().timestamp() + (4 * 3600)
             
-            return self.session_token [cite: 9]
+            return self.session_token
         except Exception:
             return ""
 
     def get_channels(self) -> List[Dict[str, Any]]:
+        """Get Pluto TV channels"""
         try:
-            token = self._get_session_token() [cite: 9]
-            if not token: return [] [cite: 10]
+            token = self._get_session_token()
+            if not token:
+                return []
             
-            url = "https://service-channels.clusters.pluto.tv/v2/guide/channels" [cite: 10]
+            url = "https://service-channels.clusters.pluto.tv/v2/guide/channels"
             headers = self.headers.copy()
-            headers['authorization'] = f'Bearer {token}' [cite: 11]
+            headers['authorization'] = f'Bearer {token}'
             
-            params = {'channelIds': '', 'offset': '0', 'limit': '1000', 'sort': 'number:asc'} [cite: 12, 13]
-            response = requests.get(url, params=params, headers=headers, timeout=self.get_timeout()) [cite: 13]
+            params = {'channelIds': '', 'offset': '0', 'limit': '1000', 'sort': 'number:asc'}
+            response = requests.get(url, params=params, headers=headers, timeout=self.get_timeout())
             response.raise_for_status()
             
-            channel_data = response.json().get("data", []) [cite: 13]
-            categories_list = self._get_categories(headers, params) [cite: 14, 27]
+            channel_data = response.json().get("data", [])
+            categories_list = self._get_categories(headers, params)
             
             processed_channels = []
             for channel in channel_data:
-                channel_id = channel.get('id') [cite: 15]
-                name = channel.get('name') [cite: 15]
-                if not channel_id or not name: continue [cite: 16]
+                channel_id = channel.get('id')
+                name = channel.get('name')
+                
+                # Fixed syntax error: continue must be on a new line
+                if not channel_id or not name:
+                    continue
                 
                 logo = ""
-                for image in channel.get('images', []): [cite: 17]
+                images = channel.get('images', [])
+                for image in images:
                     if image.get('type') == 'colorLogoPNG':
-                        logo = image.get('url', '') [cite: 17]
+                        logo = image.get('url', '')
                         break
                 
-                group = categories_list.get(channel_id, 'General') [cite: 18, 28]
+                group = categories_list.get(channel_id, 'General')
                 
-                if self.stitcher_params: [cite: 19]
+                if self.stitcher_params:
                     stream_url = (f"https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/v2/stitch/hls/channel/{channel_id}/master.m3u8"
-                                  f"?{self.stitcher_params}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true") [cite: 19, 20]
+                                  f"?{self.stitcher_params}&jwt={token}&masterJWTPassthrough=true&includeExtendedEvents=true")
                 else:
-                    sid = str(uuid.uuid4()) [cite: 20]
+                    sid = str(uuid.uuid4())
                     stream_url = (f"https://cfd-v4-service-channel-stitcher-use1-1.prd.pluto.tv/stitch/hls/channel/{channel_id}/master.m3u8"
                                   f"?advertisingId=&appName=web&appVersion=unknown&deviceId={self.device_id}&deviceMake=Chrome&deviceModel=web"
-                                  f"&deviceType=web&sid={sid}&serverSideAds=true") [cite: 21, 22]
+                                  f"&deviceType=web&sid={sid}&serverSideAds=true")
                 
                 processed_channels.append({
-                    'id': str(channel_id), [cite: 23]
-                    'name': name, [cite: 23]
-                    'stream_url': stream_url, [cite: 23]
-                    'logo': logo, [cite: 23]
-                    'group': group [cite: 24]
+                    'id': str(channel_id),
+                    'name': name,
+                    'stream_url': stream_url,
+                    'logo': logo,
+                    'group': group
                 })
             return processed_channels
         except Exception:
             return []
 
     def _get_categories(self, headers: dict, params: dict) -> dict:
+        """Get channel categories for grouping"""
         try:
-            category_url = "https://service-channels.clusters.pluto.tv/v2/guide/categories" [cite: 27]
-            response = requests.get(category_url, params=params, headers=headers, timeout=self.get_timeout()) [cite: 27]
-            categories_data = response.json().get("data", []) [cite: 27]
+            category_url = "https://service-channels.clusters.pluto.tv/v2/guide/categories"
+            response = requests.get(category_url, params=params, headers=headers, timeout=self.get_timeout())
+            categories_data = response.json().get("data", [])
             categories_list = {}
             for elem in categories_data:
-                category = elem.get('name', 'General') [cite: 28]
-                for cid in elem.get('channelIDs', []): [cite: 28]
+                category = elem.get('name', 'General')
+                channel_ids = elem.get('channelIDs', [])
+                for cid in channel_ids:
                     categories_list[cid] = category
             return categories_list
         except Exception:
             return {}
 
     def generate_m3u(self, channels, epg_url):
+        """Build the M3U content"""
         m3u = f'#EXTM3U x-tvg-url="{epg_url}"\n'
         for ch in channels:
             m3u += f'#EXTINF:-1 tvg-id="{ch["id"]}" tvg-logo="{ch["logo"]}" group-title="{ch["group"]}",{ch["name"]}\n'
@@ -169,9 +183,15 @@ class PlutoProvider(BaseProvider):
 if __name__ == "__main__":
     provider = PlutoProvider()
     channels = provider.get_channels()
+    
+    # Using your provided EPG URL
     epg_url = "https://github.com/matthuisman/i.mjh.nz/raw/refs/heads/master/PlutoTV/all.xml.gz"
     
-    playlist = provider.generate_m3u(channels, epg_url)
+    playlist_content = provider.generate_m3u(channels, epg_url)
     
-    with open(f"pluto_{provider.region}.m3u", "w") as f:
-        f.write(playlist)
+    # Save file based on current region
+    filename = f"pluto_{provider.region}.m3u"
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(playlist_content)
+    
+    print(f"Successfully generated {filename} with {len(channels)} channels.")
