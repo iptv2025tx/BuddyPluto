@@ -39,7 +39,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes"
           else
-            git commit -m "Update All Pluto Playlists and Master"
+            git commit -m "Update Pluto: Grouped by Country"
             git pull --rebase origin main
             git push origin main
           fi
