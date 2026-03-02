@@ -7,10 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1
-      matrix:
-        region: [uk, ca, fr, us_east, us_west]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -25,12 +21,15 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run Script
-        env:
-          PLUTO_REGION: ${{ matrix.region }}
-          PLUTO_USERNAME: ${{ secrets.PLUTO_USERNAME }}
-          PLUTO_PASSWORD: ${{ secrets.PLUTO_PASSWORD }}
-        run: python pluto_provider.py
+      - name: Update Regional Playlists
+        run: |
+          for region in us_east us_west ca uk fr; do
+            export PLUTO_REGION=$region
+            python pluto_provider.py
+          done
+
+      - name: Generate Master Playlist
+        run: python pluto_provider.py --merge
 
       - name: Commit and Push
         run: |
@@ -40,7 +39,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes"
           else
-            git commit -m "Update Pluto: ${{ matrix.region }}"
+            git commit -m "Update All Pluto Playlists and Master"
             git pull --rebase origin main
             git push origin main
           fi
