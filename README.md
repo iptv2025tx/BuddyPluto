@@ -1,40 +1,8 @@
+# 🍻 Cheers n Thank You 🍻
+This script was created by BuddyChewChew, who has been working on scripts for a while. 
+
 # 📺 Pluto TV Custom Playlists
-
 Automatically updated M3U playlists for Pluto TV with forced HD resolution and country-based grouping.
-
----
-
-## 🔗 Live Playlists (M3U)
-
-| Region / Type | Direct Raw M3U Link (Copy & Paste) |
-| :--- | :--- |
-| **🌍 ALL REGIONS (Sorted)** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_all.m3u` |
-| **🇺🇸 United States** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_us.m3u` |
-| **🇨🇦 Canada** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_ca.m3u` |
-| **🇬🇧 United Kingdom** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_gb.m3u` |
-| **🇫🇷 France** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_fr.m3u` |
-| **🇩🇪 Germany** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_de.m3u` |
-| **🇪🇸 Spain** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_es.m3u` |
-| **🇮🇹 Italy** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_it.m3u` |
-| **🇲🇽 Mexico** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_mx.m3u` |
-| **🇧🇷 Brazil** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_br.m3u` |
-| **🇦🇷 Argentina** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_ar.m3u` |
-| **🇨🇱 Chile** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_cl.m3u` |
-| **🇳🇴 Norway** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_no.m3u` |
-| **🇸🇪 Sweden** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_se.m3u` |
-| **🇩🇰 Denmark** | `https://raw.githubusercontent.com/BuddyChewChew/pluto/main/pluto_dk.m3u` |
-
----
-
-## 📅 XML TV Guide (EPG)
-
-EPG You shouldn't need it. Epgs load with playlist.
-
-| Type | Link |
-| :--- | :--- |
-| **EPG URL** | `https://github.com/matthuisman/i.mjh.nz/raw/refs/heads/master/PlutoTV/all.xml.gz` |
-
----
 
 ## ✨ Key Features
 
