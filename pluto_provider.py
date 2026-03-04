@@ -17,7 +17,7 @@ class BaseProvider:
         return 30
 
 class PlutoProvider(BaseProvider):
-    """Provider for Pluto TV with HD Resolution, Categories, and Country-based Grouping"""
+    """Provider for Pluto TV with HD Resolution, Categories, and Regional EPGs"""
 
     def __init__(self):
         super().__init__("pluto")
@@ -95,7 +95,6 @@ class PlutoProvider(BaseProvider):
             response = requests.get(url, params={'limit': '1000'}, headers=headers, timeout=self.get_timeout())
             channel_data = response.json().get("data", [])
             
-            # Get category mapping to restore groups in individual files
             categories_list = self._get_categories(headers)
             
             processed_channels = []
@@ -118,15 +117,16 @@ class PlutoProvider(BaseProvider):
             return processed_channels
         except Exception: return []
 
-    def generate_m3u(self, channels, epg_url):
-        m3u = f'#EXTM3U x-tvg-url="{epg_url}"\n'
+    def generate_m3u(self, channels):
+        # Uses the specific regional EPG URL in the header as requested
+        m3u = f'#EXTM3U url-tvg="https://github.com/matthuisman/i.mjh.nz/raw/master/PlutoTV/{self.region}.xml.gz"\n'
         for ch in channels:
             m3u += f'#EXTINF:-1 tvg-id="{ch["id"]}" tvg-logo="{ch["logo"]}" group-title="{ch["group"]}",{ch["name"]}\n'
             m3u += f'{ch["stream_url"]}\n'
         return m3u
 
-def merge_master_playlist(epg_url):
-    """Combines regional files and Replaces Pluto categories with Country Names"""
+def merge_master_playlist():
+    """Combines regional files and Replaces Pluto categories with Country Names for the ALL file"""
     sort_config = {
         "us": {"priority": 1, "label": "United States"},
         "ca": {"priority": 2, "label": "Canada"},
@@ -144,11 +144,11 @@ def merge_master_playlist(epg_url):
         "dk": {"priority": 14, "label": "Denmark"},
     }
 
-    # Grab all regional files, excluding the combined 'all' and old 'master'
     files = [f for f in glob.glob("pluto_*.m3u") if "all.m3u" not in f and "master.m3u" not in f]
     sorted_files = sorted(files, key=lambda x: sort_config.get(x.replace("pluto_", "").replace(".m3u", ""), {}).get("priority", 99))
     
-    master_content = f'#EXTM3U x-tvg-url="{epg_url}"\n'
+    # Master file uses the 'all.xml.gz' guide
+    master_content = '#EXTM3U url-tvg="https://github.com/matthuisman/i.mjh.nz/raw/master/PlutoTV/all.xml.gz"\n'
     for file in sorted_files:
         region_key = file.replace("pluto_", "").replace(".m3u", "")
         country_label = sort_config.get(region_key, {}).get("label", region_key.upper())
@@ -157,7 +157,7 @@ def merge_master_playlist(epg_url):
             with open(file, "r", encoding="utf-8") as f:
                 for line in f:
                     if line.startswith("#EXTINF"):
-                        # Force group to Country Name in the 'All' file only
+                        # Force group to Country Name in the 'All' file
                         line = re.sub(r'group-title="[^"]*"', f'group-title="{country_label}"', line)
                         master_content += line
                     elif not line.startswith("#EXTM3U") and line.strip():
@@ -167,11 +167,10 @@ def merge_master_playlist(epg_url):
         f.write(master_content)
 
 if __name__ == "__main__":
-    epg = "https://github.com/matthuisman/i.mjh.nz/raw/refs/heads/master/PlutoTV/all.xml.gz"
     if len(sys.argv) > 1 and sys.argv[1] == "--merge":
-        merge_master_playlist(epg)
+        merge_master_playlist()
     else:
         provider = PlutoProvider()
         channels = provider.get_channels()
         with open(f"pluto_{provider.region}.m3u", "w", encoding="utf-8") as f:
-            f.write(provider.generate_m3u(channels, epg))
+            f.write(provider.generate_m3u(channels))
